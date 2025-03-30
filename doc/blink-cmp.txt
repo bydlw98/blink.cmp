@@ -69,7 +69,6 @@ COMPARED TO BUILT-IN COMPLETION*blink-cmp-introduction-compared-to-built-in-comp
     - Proximity + frecency score bonuses
 - Prefetching to minimize LSP latency
 - Support for external non-LSP sources </configuration/sources.html#community-sources> (snippets, path, buffer, git, ripgrep, …)
-- Documentation popup </configuration/completion.html#documentation>
 - Ghost text </configuration/completion.html#ghost-text>
 - Signature help </configuration/signature.html>
 - Auto-bracket support </configuration/completion.html#auto-brackets> based on semantic tokens
@@ -503,6 +502,29 @@ Server (`emmet_ls`)
         -- default sorts
         'score',
         'sort_text',
+    }
+<
+
+
+EXCLUDE KEYWORDS/CONSTANTS FROM AUTOCOMPLETE ~
+
+Removes language keywords/constants (if, else, while, etc.) provided by the
+language server from completion results. Useful if you prefer to use builtin or
+custom snippets for such constructs.
+
+>lua
+    sources = {
+      providers = {
+        lsp = {
+          name = 'LSP',
+          module = 'blink.cmp.sources.lsp',
+          transform_items = function(_, items)
+            return vim.tbl_filter(function(item)
+              return item.kind ~= require('blink.cmp.types').CompletionItemKind.Keyword
+            end, items)
+          end,
+        },
+      },
     }
 <
 
@@ -2293,6 +2315,12 @@ PROVIDERS
     
       cmdline = {
         module = 'blink.cmp.sources.cmdline',
+        -- Disable shell commands on windows, since they cause neovim to hang
+        enabled = function()
+          return vim.fn.has('win32') == 0
+            or vim.fn.getcmdtype() ~= ':'
+            or not vim.fn.getcmdline():match("^[%%0-9,'<>%-]*!")
+        end,
       },
     
       omni = {
